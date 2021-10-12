@@ -176,7 +176,7 @@ void vypisBarvu()
     if (help[i] > max)
     {
       max = help[i];
-      //blablablablabala
+      //blablablablabalavmrbjafv
       result = i;
     }
   }
