@@ -1,12 +1,10 @@
-
-//dodělat nejvyzší počet v poli, uděat větší přední kryt, vylepšit trychtýř, vyzkoušet display, přidat display do predniho krytu
-
 #include <Arduino.h>
 #include <Servo.h>
-//Kniohovny pro LCD display
+//Knihohovny pro LCD display
 #include <Wire.h>
-//#include <LCD.h>
+
 #include <LiquidCrystal_I2C.h>
+#include "CMBMenu.hpp"
 
 LiquidCrystal_I2C lcd(0x27, 20, 4);
 
@@ -19,6 +17,29 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 #define but2 2
 #define but3 3
 
+const char g_Start_pc[] PROGMEM = {"1. START"};
+const char g_Reset_pc[] PROGMEM = {"2. Reset"};
+const char g_Pridat_pc[] PROGMEM = {"3. Pridat barvu"};
+const char g_PridatBarvu_pc[] PROGMEM = {"Vhodte predmet"};
+
+enum MenuFID { //IDs
+  Startid,
+  Resetid,
+  Pridatid,
+  PridatBarvuId,
+};
+
+
+enum KeyType {
+  KeyNone, 
+  KeyUp,
+  KeyDown,
+  KeyEnter,
+  KeyExit
+};
+
+CMBMenu<100> g_Menu;
+
 Servo servo1;
 
 int redFrequency;
@@ -26,12 +47,11 @@ int greenFrequency;
 int blueFrequency;
 
 int odchylka = 3;
-const int pocetBarev = 4;
+const int pocetBarev = 3;
 //Pole colors obsahuje zmerene hodnoty RGB frekfenci jednotlivych barev
-int colors[pocetBarev][3] = {{60, 72, 57},  // neutral
-                             {59, 67, 54},  //modra
-                             {60, 69, 68},  //zelena
-                             {49, 61, 62}}; //hneda
+int colors[pocetBarev][3] = {{0, 0, 0},  // neutral
+                             {0, 0, 0},  //modra
+                             {0, 0, 0}}; //hneda
 
 int startStop = 0;
 int menu = 0;
@@ -39,11 +59,35 @@ int aktualniBarva = 1;
 
 void stopInterrrupt()
 {
-  if (startStop == 1)
-  {
+  
+  if (startStop == 1){
+    delay(300);
+    g_Menu.exit();
     startStop = 0;
-    menu = 3;
+    aktualniBarva = 1;
   }
+}
+
+void printMenuEntry(const char* f_Info)
+{
+  Serial.println("print funkce");
+  String info_s;
+  MBHelper::stringFromPgm(f_Info, info_s);
+  //lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print("--------------------");
+  lcd.setCursor(20/info_s.length()+1, 1);
+  lcd.print(info_s);
+   lcd.setCursor(0, 2);
+  lcd.print("--------------------");
+  lcd.setCursor(4, 3);
+
+  lcd.print((char)127);
+  lcd.print(" ");
+  lcd.print((char)126);
+  lcd.print("  ");
+  lcd.print("Enter/Exit");
+  
 }
 
 void setup()
@@ -64,9 +108,27 @@ void setup()
 
   lcd.begin();
   lcd.backlight();
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("--------------------");
+  lcd.setCursor(0,1);
+  lcd.print("  Arduino Tridicka");
+  lcd.setCursor(0,2);
+  lcd.print("--------------------");
+  delay(500);
+  lcd.clear();
+
+  g_Menu.addNode(0, g_Start_pc , Startid);
+  g_Menu.addNode(0, g_Reset_pc , Resetid);
+  g_Menu.addNode(0, g_Pridat_pc , Pridatid);
+  g_Menu.addNode(1, g_PridatBarvu_pc , PridatBarvuId);
+
+  const char* info;
+  g_Menu.buildMenu(info);
+  g_Menu.printMenu();
+  printMenuEntry(info);
 
   //Zapnutí sériového monitoru
-
   Serial.begin(9600);
   attachInterrupt(digitalPinToInterrupt(but3), stopInterrrupt, CHANGE); //preruseni pro stop
 }
@@ -91,17 +153,12 @@ int mereniZapisRGB(int akualniBarva) //Funkce zmeri RGB a zapíše do pole
   unsigned long cas = 0;
   cas = millis();
 
-  if (startStop == 0)
-  {
+  if (startStop == 0){
+    
     delay(300);
     servo1.write(160);
     lcd.clear();
-    lcd.print("   Cteni barvy ");
-    lcd.print(akualniBarva);
-    //delay(1000);
-
-    do
-    {
+    do{
       redFrequency = pulseIn(sensorOut, LOW);
       greenFrequency = pulseIn(sensorOut, LOW);
       blueFrequency = pulseIn(sensorOut, LOW);
@@ -111,22 +168,21 @@ int mereniZapisRGB(int akualniBarva) //Funkce zmeri RGB a zapíše do pole
       for (int i = 0; i < 3; i++)
         Serial.print(RGB[i]);
       Serial.println("");
-    } while (millis() - cas < 3000);
+    } while (millis() - cas < 2000);
 
     servo1.write(50);
   }
-  else
-  {
+  else{
     redFrequency = pulseIn(sensorOut, LOW);
     greenFrequency = pulseIn(sensorOut, LOW);
     blueFrequency = pulseIn(sensorOut, LOW);
     int RGBdva[3] = {redFrequency, greenFrequency, blueFrequency};
     //Konrola prave meřene barvy (pole RGB) se zmerenymi barvy v poli colors
+    
     for (int i = 0; i < 3; i++)
       Serial.print(RGBdva[i]);
     Serial.println("");
-  int pom = 0;
-    int r;
+
 
    for(int r = 0;r<pocetBarev;r++){
       for (int c = 0; c < 3; c++){
@@ -146,7 +202,7 @@ void vypisBarvu()
 
   unsigned long time = 0;
   time = millis();
-  int help[pocetBarev] = {0, 0, 0, 0}; // pomocne pole pro zaznamenavani vysledku mereni jednotlivych barev
+  int help[pocetBarev] = {0, 0, 0}; // pomocne pole pro zaznamenavani vysledku mereni jednotlivych barev
 
   do
   { //začátek měření; přičtení hodnoty na místo barvy v poli podle toho ktera barva se vyskytuje nejcasteji
@@ -158,38 +214,31 @@ void vypisBarvu()
       help[1]++;
     if (color == 2)
       help[2]++;
-    if (color == 3)
-      help[3]++;
-  } while (millis() - time < 3000); //mereni po dobu 2000 milisekund
+  } while (millis() - time < 2000); //mereni po dobu 2000 milisekund
 
   //vybrani nejvetsiho cisla (nejcastejsi barvy) v poli
   int result = 0;
   int i = 0;
   int max = 0;
-  for (; i < pocetBarev; i++)
-  {/*
-    if(help[i] < 15){
-      result = -1;
-      break;
-    }
-      */
-    if (help[i] > max)
-    {
+  for (; i < pocetBarev; i++){
+    if (help[i] > max){
       max = help[i];
-      //blablablablabalavmrbjafv
       result = i;
     }
   }
-  
+
+  int minimum = 7;
+  if(help[0] <= minimum && help[1] <= minimum && help[2] <= minimum)
+      result = -1;
 
   //vypis pole help
-  for (int i = 0; i < pocetBarev; i++)
-  {
+  for (int i = 0; i < pocetBarev; i++){
     Serial.print(help[i]);
     Serial.print(" - ");
   }
   Serial.println("");
 
+  lcd.clear();
   //Podminka switch rozhoduje finalni barvu
   switch (result)
   {
@@ -205,23 +254,18 @@ void vypisBarvu()
     lcd.print("Barva 3");
     break;
 
-  case 3:
-    lcd.print("Barva 4");
-    break;
   default:
-    lcd.print("Nezadana barva");
+    lcd.print("Jina barva");
   }
   servo1.write(50); //druha poloha serva1
   delay(2000);
+  lcd.clear();
   return;
 }
 
-void doplnNulyDoPole()
-{
-  for (int r = aktualniBarva; aktualniBarva < pocetBarev + 1; aktualniBarva++)
-  {
-    for (int c = 0; c < 3; c++)
-    {
+void doplnNulyDoPole(){
+  for (int r = aktualniBarva; aktualniBarva < pocetBarev + 1; aktualniBarva++){
+    for (int c = 0; c < 3; c++){
       colors[aktualniBarva - 1][c] = 0;
     }
   }
@@ -229,124 +273,9 @@ void doplnNulyDoPole()
   return;
 }
 
-void changeMenu()
-{
-
-  int val1 = digitalRead(but1);
-  int val2 = digitalRead(but2);
-  int val3 = digitalRead(but3);
-
-  if (val2 == HIGH)
-  { //posuv menu
-    delay(300);
-    menu++;
-  }
-
-  if (menu == 3)
-    menu = 0;
-
-  if (val1 == HIGH && menu == 0)
-  { //Start
-    startStop = 1;
-    menu = 3;
-  }
-  if (val1 == HIGH && menu == 5)
-  { //stisk prdani barvy
-    mereniZapisRGB(aktualniBarva);
-    aktualniBarva++;
-    menu = 5;
-  }
-
-  if (val1 == HIGH && menu == 4)
-  { //stisk prdani barvy
-    mereniZapisRGB(aktualniBarva);
-    aktualniBarva++;
-    menu = 5;
-  }
-
-  if (val1 == HIGH && menu == 2)
-  {
-    delay(200);
-    menu = 4;
-  }
-
-  if (val3 == HIGH && menu == 5)
-  {
-    delay(300);
-    startStop = 1;
-    doplnNulyDoPole();
-  }
-
-  if (aktualniBarva == 5)
-  {
-    startStop = 1;
-    doplnNulyDoPole();
-  }
-
-  switch (menu)
-  {
-  case 0:
-    lcd.print("        MENU");
-    lcd.setCursor(0, 1);
-    lcd.print(">START");
-    lcd.setCursor(0, 2);
-    lcd.print(" Reset");
-    lcd.setCursor(0, 3);
-    lcd.print(" Pridat barvy");
-    delay(50);
-    break;
-
-  case 1:
-    lcd.print("        MENU");
-    lcd.setCursor(0, 1);
-    lcd.print(" START");
-    lcd.setCursor(0, 2);
-    lcd.print(">Reset");
-    lcd.setCursor(0, 3);
-    lcd.print(" Pridat barvy");
-    delay(50);
-    break;
-
-  case 2:
-    lcd.print("        MENU");
-    lcd.setCursor(0, 1);
-    lcd.print(" START");
-    lcd.setCursor(0, 2);
-    lcd.print(" Reset");
-    lcd.setCursor(0, 3);
-    lcd.print(">Pridat barvy");
-    delay(50);
-    break;
-  case 4:
-    lcd.print("   Pridani barvy");
-    lcd.setCursor(0, 2);
-    lcd.print("Vhod objekt + ENTER");
-
-    delay(50);
-    break;
-
-  case 5:
-    lcd.print("  Pridani barvy ");
-    lcd.print(aktualniBarva);
-    lcd.setCursor(0, 2);
-    lcd.print("ENTER - pridat");
-    lcd.setCursor(0, 3);
-    lcd.print("STOP - tridit");
-
-    delay(70);
-    break;
-
-  default:
-    break;
-  }
-  //lcd.clear();
-}
-void vypisPole()
-{
-  for (int r = 0; r < pocetBarev; r++)
-  {
-    for (int c = 0; c < 3; c++)
-    {
+void vypisPole(){
+  for (int r = 0; r < pocetBarev; r++){
+    for (int c = 0; c < 3; c++){
       Serial.print(colors[r][c]);
       Serial.print("-");
     }
@@ -356,16 +285,121 @@ void vypisPole()
   delay(1000);
 }
 
-void loop()
-{
 
-  if (startStop == 0)
-    changeMenu();
+KeyType getKey(){
+  int val1 = digitalRead(but1);
+  int val2 = digitalRead(but2);
+  int val3 = digitalRead(but3);
+  KeyType key = KeyNone;
+
+  if(val2 == HIGH){
+    Serial.println("val222");
+    delay(200);
+    lcd.clear();
+    key = KeyUp;
+
+  }
+    
+  if(val1 == HIGH){
+    Serial.println("val111");
+    delay(200);
+    lcd.clear();
+    key = KeyEnter;
+    
+  }
+
+  /*
+  if(val3 == 1){
+    Serial.println("val333");
+     delay(200);
+    lcd.clear();
+    key = KeyEnter;
+  }*/
+  g_Menu.printMenu();
+  return key;
+}
+
+void Pridat(){
+  if(startStop == 0){
+        delay(200);
+    lcd.clear();
+    Serial.println(aktualniBarva);
+    if(aktualniBarva == 4){
+      startStop = 1;
+      doplnNulyDoPole();
+      aktualniBarva = 1;
+    }else{
+     
+      if(aktualniBarva == 3){
+        startStop = 1;
+        doplnNulyDoPole();
+        
+    }else{
+      mereniZapisRGB(aktualniBarva);
+      aktualniBarva++;
+    }
+     
+  }
+  }
+
+ 
+}
+void Start(){
+  delay(300);
+  lcd.clear();
+ startStop = 1;
+}
+
+void Reset(){
+  
+}
+void loop(){
+
+  if (startStop == 0){
+    int fid = 0;
+    const char* info;
+    bool layerChanged=false;
+
+    KeyType key = getKey();
+    switch(key) {
+      case KeyExit:
+        g_Menu.exit();
+        break;
+      case KeyEnter:
+        g_Menu.enter(layerChanged);
+        break;
+      case KeyUp:
+        g_Menu.right();
+        break;
+      case KeyDown:
+        g_Menu.left();
+        break;
+      default:
+        break;
+    }
+
+    fid = g_Menu.getInfo(info);
+    printMenuEntry(info);
+  
+  if ((KeyEnter == key) && (!layerChanged)) {
+    switch (fid) {
+      case Startid:
+        Start();
+        break;
+      case Resetid:
+        Reset();
+        break;
+      case PridatBarvuId:
+        Pridat();
+        break;
+      default:
+        break;
+    }
+  }
+  }
   else
   {
     vypisPole();
     vypisBarvu();
   }
-
-  lcd.clear();
 }
