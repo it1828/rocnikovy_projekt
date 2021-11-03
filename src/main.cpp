@@ -287,6 +287,7 @@ void vypisPole(){
 
 
 
+
 KeyType getKey(){
   int val1 = digitalRead(but1);
   int val2 = digitalRead(but2);
