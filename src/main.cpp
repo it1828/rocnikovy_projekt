@@ -1,13 +1,12 @@
-#include <Arduino.h>
-#include <Servo.h>
-//Knihohovny pro LCD display
+#include <Arduino.h> //Arduino knihnova
+#include <Servo.h> // Servo knihovna
 #include <Wire.h>
+#include <OneButton.h> // double click /long press button library
+#include <LiquidCrystal_I2C.h> //Knihohovny pro LCD display
+#include "CMBMenu.hpp" // knihovna pro multimenu
 
-#include <LiquidCrystal_I2C.h>
-#include "CMBMenu.hpp"
 
-LiquidCrystal_I2C lcd(0x27, 20, 4);
-
+// nastaveni vsech potrebny pinu
 #define S0 4
 #define S1 5
 #define S2 6
@@ -15,12 +14,20 @@ LiquidCrystal_I2C lcd(0x27, 20, 4);
 #define sensorOut 8
 #define but1 10
 #define but2 2
-#define but3 3
+#define but3 3 // prozatim nefunkcni tlacitko
+
 
 const char g_Start_pc[] PROGMEM = {"1. START"};
 const char g_Reset_pc[] PROGMEM = {"2. Reset"};
 const char g_Pridat_pc[] PROGMEM = {"3. Pridat barvu"};
 const char g_PridatBarvu_pc[] PROGMEM = {"Vhodte predmet"};
+
+//Nastaveni datovych typu knohoven
+LiquidCrystal_I2C lcd(0x27, 20, 4);
+OneButton button(but1, false, false);
+OneButton button2(but2, false, false);
+CMBMenu<100> g_Menu;
+Servo servo1;
 
 enum MenuFID { //IDs
   Startid,
@@ -29,8 +36,7 @@ enum MenuFID { //IDs
   PridatBarvuId,
 };
 
-
-enum KeyType {
+enum KeyType { // "Funkce" tlacitek
   KeyNone, 
   KeyUp,
   KeyDown,
@@ -38,28 +44,24 @@ enum KeyType {
   KeyExit
 };
 
-CMBMenu<100> g_Menu;
-
-Servo servo1;
-
+//Nastaveni promennych
 int redFrequency;
 int greenFrequency;
 int blueFrequency;
 
 int odchylka = 3;
 const int pocetBarev = 3;
-//Pole colors obsahuje zmerene hodnoty RGB frekfenci jednotlivych barev
-int colors[pocetBarev][3] = {{0, 0, 0},  // neutral
-                             {0, 0, 0},  //modra
-                             {0, 0, 0}}; //hneda
+//Pole colors do ktereho se zapisou zmerene hodnoty RGB frekfenci jednotlivych barev
+int colors[pocetBarev][3] = {{0, 0, 0},  
+                             {0, 0, 0},
+                             {0, 0, 0}};
 
-int startStop = 0;
-int menu = 0;
-int aktualniBarva = 1;
+int startStop = 0; // slouzi ke startu trizeni
+int aktualniBarva = 1; 
+bool layerChanged=false;
+KeyType key = KeyNone;
 
-void stopInterrrupt()
-{
-  
+void stopInterrrupt(){ // prerusovaci funkce pro STOP
   if (startStop == 1){
     delay(300);
     g_Menu.exit();
@@ -68,30 +70,49 @@ void stopInterrrupt()
   }
 }
 
-void printMenuEntry(const char* f_Info)
-{
-  Serial.println("print funkce");
+void printMenuEntry(const char* f_Info) {// "sablona" pro vypis menu
   String info_s;
   MBHelper::stringFromPgm(f_Info, info_s);
-  //lcd.clear();
   lcd.setCursor(0, 0);
   lcd.print("--------------------");
   lcd.setCursor(20/info_s.length()+1, 1);
   lcd.print(info_s);
-   lcd.setCursor(0, 2);
+  lcd.setCursor(0, 2);
   lcd.print("--------------------");
   lcd.setCursor(4, 3);
-
   lcd.print((char)127);
   lcd.print(" ");
   lcd.print((char)126);
   lcd.print("  ");
   lcd.print("Enter/Exit");
-  
 }
 
-void setup()
-{
+//Jednoduche funkce pro osetreni tlacitek
+void doubleClick(){
+    startStop = 1;
+    return;
+}
+
+void click(){
+    key = KeyEnter;
+    return;
+}
+void clickup(){
+    key = KeyUp;
+    return;
+}
+void longpress(){
+    key = KeyExit;
+    return;
+}
+/*
+void clickdown(){
+    key = KeyDown;
+    return;
+}
+*/
+
+void setup(){
   //Nastavení i/o
   pinMode(S0, OUTPUT);
   pinMode(S1, OUTPUT);
@@ -100,12 +121,15 @@ void setup()
   pinMode(sensorOut, INPUT);
   pinMode(but1, INPUT);
   pinMode(but2, INPUT);
-  servo1.attach(9);
+  //Nastaveni serv
+  servo1.attach(9); 
   servo1.write(50);
+
   //Nastavení výstupní frekfence na doporučených 20%
   digitalWrite(S0, HIGH);
   digitalWrite(S1, LOW);
 
+  //Vypis pri zapinani tridicky
   lcd.begin();
   lcd.backlight();
   lcd.clear();
@@ -115,26 +139,34 @@ void setup()
   lcd.print("  Arduino Tridicka");
   lcd.setCursor(0,2);
   lcd.print("--------------------");
-  delay(500);
+  delay(1500);
   lcd.clear();
 
+  //Nastaveni urovni menu (prvni parametr) a ID
   g_Menu.addNode(0, g_Start_pc , Startid);
   g_Menu.addNode(0, g_Reset_pc , Resetid);
   g_Menu.addNode(0, g_Pridat_pc , Pridatid);
   g_Menu.addNode(1, g_PridatBarvu_pc , PridatBarvuId);
-
+  
+  //Vypis menu
   const char* info;
   g_Menu.buildMenu(info);
   g_Menu.printMenu();
   printMenuEntry(info);
 
-  //Zapnutí sériového monitoru
-  Serial.begin(9600);
-  attachInterrupt(digitalPinToInterrupt(but3), stopInterrrupt, CHANGE); //preruseni pro stop
+  //Z knihovny OneButton.h pro osetreni tlacitek
+  button.attachDoubleClick(doubleClick);
+  button.attachClick(click);
+  button.attachLongPressStart(longpress);
+  button2.attachClick(clickup);
+
+  attachInterrupt(digitalPinToInterrupt(but2), stopInterrrupt, CHANGE); //preruseni pro STOP
+  Serial.begin(9600); //Zapnutí sériového monitoru
 }
 
-int mereniZapisRGB(int akualniBarva) //Funkce zmeri RGB a zapíše do pole
-{
+
+
+int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
   //Čtení červené barvy, pomocí nastavní pinů S2 a S3 na LOW
   digitalWrite(S2, LOW);
   digitalWrite(S3, LOW);
@@ -148,13 +180,12 @@ int mereniZapisRGB(int akualniBarva) //Funkce zmeri RGB a zapíše do pole
   //Čtení zelené barvy, pomocí nastavní pinů S2 na LOW a S3 na HIGH
   digitalWrite(S2, LOW);
   digitalWrite(S3, HIGH);
-  //Zápis frekfence do proměnné redFrequency
 
   unsigned long cas = 0;
   cas = millis();
 
   if (startStop == 0){
-    
+    //Pri stopu tridicky (zapis barvy do pole colors)
     delay(300);
     servo1.write(160);
     lcd.clear();
@@ -169,21 +200,21 @@ int mereniZapisRGB(int akualniBarva) //Funkce zmeri RGB a zapíše do pole
         Serial.print(RGB[i]);
       Serial.println("");
     } while (millis() - cas < 2000);
-
     servo1.write(50);
   }
   else{
+    //Pri startu tridicky (rozlisovani barev)
     redFrequency = pulseIn(sensorOut, LOW);
     greenFrequency = pulseIn(sensorOut, LOW);
     blueFrequency = pulseIn(sensorOut, LOW);
     int RGBdva[3] = {redFrequency, greenFrequency, blueFrequency};
-    //Konrola prave meřene barvy (pole RGB) se zmerenymi barvy v poli colors
     
+    //Vypis RGB ze sensoru
     for (int i = 0; i < 3; i++)
       Serial.print(RGBdva[i]);
     Serial.println("");
 
-
+  //Konrola prave meřene barvy (pole RGB) se zmerenymi barvy v poli colors
    for(int r = 0;r<pocetBarev;r++){
       for (int c = 0; c < 3; c++){
         if (RGBdva[c] + (odchylka) >= colors[r][c] && RGBdva[c] - (odchylka-1) <= colors[r][c])
@@ -196,16 +227,13 @@ int mereniZapisRGB(int akualniBarva) //Funkce zmeri RGB a zapíše do pole
   }
 }
 
-void vypisBarvu()
-{
-  servo1.write(160); //prvni poloha serva pro čteni barvičky
-
+void vypisBarvu(){
+  servo1.write(160); //prvni poloha serva pro čteni barvy
   unsigned long time = 0;
   time = millis();
   int help[pocetBarev] = {0, 0, 0}; // pomocne pole pro zaznamenavani vysledku mereni jednotlivych barev
 
-  do
-  { //začátek měření; přičtení hodnoty na místo barvy v poli podle toho ktera barva se vyskytuje nejcasteji
+  do{ //začátek měření; přičtení hodnoty na místo barvy v poli podle toho ktera barva se vyskytuje nejcasteji
     int color;
     color = mereniZapisRGB(aktualniBarva);
     if (color == 0)
@@ -227,6 +255,7 @@ void vypisBarvu()
     }
   }
 
+  //Pokud namerene hodnoty se temer vůbec neschoduji - jina barva
   int minimum = 7;
   if(help[0] <= minimum && help[1] <= minimum && help[2] <= minimum)
       result = -1;
@@ -263,7 +292,7 @@ void vypisBarvu()
   return;
 }
 
-void doplnNulyDoPole(){
+void doplnNulyDoPole(){ //Funkce doplni nuly do pole colors pro zapsani mene nez 3 barev
   for (int r = aktualniBarva; aktualniBarva < pocetBarev + 1; aktualniBarva++){
     for (int c = 0; c < 3; c++){
       colors[aktualniBarva - 1][c] = 0;
@@ -272,7 +301,7 @@ void doplnNulyDoPole(){
   aktualniBarva = 1;
   return;
 }
-
+//Kontrolni vypis pole colors
 void vypisPole(){
   for (int r = 0; r < pocetBarev; r++){
     for (int c = 0; c < 3; c++){
@@ -285,45 +314,10 @@ void vypisPole(){
   delay(1000);
 }
 
-
-
-
-KeyType getKey(){
-  int val1 = digitalRead(but1);
-  int val2 = digitalRead(but2);
-  int val3 = digitalRead(but3);
-  KeyType key = KeyNone;
-
-  if(val2 == HIGH){
-    Serial.println("val222");
-    delay(200);
-    lcd.clear();
-    key = KeyUp;
-
-  }
-    
-  if(val1 == HIGH){
-    Serial.println("val111");
-    delay(200);
-    lcd.clear();
-    key = KeyEnter;
-    
-  }
-
-  /*
-  if(val3 == 1){
-    Serial.println("val333");
-     delay(200);
-    lcd.clear();
-    key = KeyEnter;
-  }*/
-  g_Menu.printMenu();
-  return key;
-}
-
+//Funkce vyvolane stiskem tlacitek
 void Pridat(){
   if(startStop == 0){
-        delay(200);
+    delay(200);
     lcd.clear();
     Serial.println(aktualniBarva);
     if(aktualniBarva == 4){
@@ -340,11 +334,8 @@ void Pridat(){
       mereniZapisRGB(aktualniBarva);
       aktualniBarva++;
     }
-     
   }
   }
-
- 
 }
 void Start(){
   delay(300);
@@ -355,14 +346,13 @@ void Start(){
 void Reset(){
   
 }
+
 void loop(){
 
-  if (startStop == 0){
+  if (startStop == 0){ // Pri stopu
     int fid = 0;
     const char* info;
-    bool layerChanged=false;
-
-    KeyType key = getKey();
+    //Definovani funkce tlacitka
     switch(key) {
       case KeyExit:
         g_Menu.exit();
@@ -379,10 +369,10 @@ void loop(){
       default:
         break;
     }
-
+    //Vypis menu na display
     fid = g_Menu.getInfo(info);
     printMenuEntry(info);
-  
+  //Pri stisku Enter spust funkci odpovidajiciho ID
   if ((KeyEnter == key) && (!layerChanged)) {
     switch (fid) {
       case Startid:
@@ -398,10 +388,13 @@ void loop(){
         break;
     }
   }
+  key = KeyNone; //Defaultni nastaveni tlacitka na None
   }
-  else
-  {
+  else{//Start trizeni
     vypisPole();
     vypisBarvu();
   }
+  button.tick(); //Funkce tick() kontroluje stav tlacitek
+  button2.tick();
+  delay(10);
 }
