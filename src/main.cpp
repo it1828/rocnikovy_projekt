@@ -28,6 +28,7 @@ OneButton button(but1, false, false);
 OneButton button2(but2, false, false);
 CMBMenu<100> g_Menu;
 Servo servo1;
+Servo servo2;
 
 enum MenuFID { //IDs
   Startid,
@@ -125,6 +126,9 @@ void setup(){
   servo1.attach(9); 
   servo1.write(50);
 
+  servo2.attach(11);
+  servo2.write(50);
+
   //Nastavení výstupní frekfence na doporučených 20%
   digitalWrite(S0, HIGH);
   digitalWrite(S1, LOW);
@@ -164,7 +168,7 @@ void setup(){
   Serial.begin(9600); //Zapnutí sériového monitoru
 }
 
-
+//---------------------------------------------------------------------------------------------//
 
 int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
   //Čtení červené barvy, pomocí nastavní pinů S2 a S3 na LOW
@@ -194,7 +198,7 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
       greenFrequency = pulseIn(sensorOut, LOW);
       blueFrequency = pulseIn(sensorOut, LOW);
       int RGB[3] = {redFrequency, greenFrequency, blueFrequency};
-      for (int i = 0; i < pocetBarev; i++)
+      for (int i = 0; i <= pocetBarev; i++)
         colors[aktualniBarva - 1][i] = RGB[i];
       for (int i = 0; i < 3; i++)
         Serial.print(RGB[i]);
@@ -227,7 +231,10 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
   }
 }
 
-void vypisBarvu(){
+void vypisBarvu(){ //Funkce kontroluje a vypise barvu
+
+  
+
   servo1.write(160); //prvni poloha serva pro čteni barvy
   unsigned long time = 0;
   time = millis();
@@ -269,8 +276,7 @@ void vypisBarvu(){
 
   lcd.clear();
   //Podminka switch rozhoduje finalni barvu
-  switch (result)
-  {
+  switch (result){
   case 0:
     lcd.print("Barva 1");
     break;
@@ -293,9 +299,9 @@ void vypisBarvu(){
 }
 
 void doplnNulyDoPole(){ //Funkce doplni nuly do pole colors pro zapsani mene nez 3 barev
-  for (int r = aktualniBarva; aktualniBarva < pocetBarev + 1; aktualniBarva++){
+  for (int r = aktualniBarva; aktualniBarva < pocetBarev; aktualniBarva++){
     for (int c = 0; c < 3; c++){
-      colors[aktualniBarva - 1][c] = 0;
+      colors[aktualniBarva][c] = 0;
     }
   }
   aktualniBarva = 1;
@@ -320,21 +326,14 @@ void Pridat(){
     delay(200);
     lcd.clear();
     Serial.println(aktualniBarva);
-    if(aktualniBarva == 4){
-      startStop = 1;
+    mereniZapisRGB(aktualniBarva);
+    if(aktualniBarva == 3){
+      
       doplnNulyDoPole();
-      aktualniBarva = 1;
-    }else{
-     
-      if(aktualniBarva == 3){
-        startStop = 1;
-        doplnNulyDoPole();
-        
-    }else{
-      mereniZapisRGB(aktualniBarva);
-      aktualniBarva++;
+      startStop = 1;
+      //aktualniBarva = 1;
     }
-  }
+    aktualniBarva++;
   }
 }
 void Start(){
@@ -393,6 +392,7 @@ void loop(){
   else{//Start trizeni
     vypisPole();
     vypisBarvu();
+    servo2.write(10);
   }
   button.tick(); //Funkce tick() kontroluje stav tlacitek
   button2.tick();
