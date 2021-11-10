@@ -14,7 +14,7 @@
 #define sensorOut 8
 #define but1 10
 #define but2 2
-#define but3 3 // prozatim nefunkcni tlacitko
+#define but3 12 // prozatim nefunkcni tlacitko
 
 
 const char g_Start_pc[] PROGMEM = {"1. START"};
@@ -24,8 +24,9 @@ const char g_PridatBarvu_pc[] PROGMEM = {"Vhodte predmet"};
 
 //Nastaveni datovych typu knohoven
 LiquidCrystal_I2C lcd(0x27, 20, 4);
-OneButton button(but1, false, false);
+OneButton button(but3, false, false);
 OneButton button2(but2, false, false);
+OneButton button3(but1, false, false);
 CMBMenu<100> g_Menu;
 Servo servo1;
 Servo servo2;
@@ -106,12 +107,13 @@ void longpress(){
     key = KeyExit;
     return;
 }
-/*
+
 void clickdown(){
+    lcd.clear();
     key = KeyDown;
     return;
 }
-*/
+
 
 void setup(){
   //Nastavení i/o
@@ -122,6 +124,7 @@ void setup(){
   pinMode(sensorOut, INPUT);
   pinMode(but1, INPUT);
   pinMode(but2, INPUT);
+  pinMode(but3, INPUT);
   //Nastaveni serv
   servo1.attach(9); 
   servo1.write(50);
@@ -163,6 +166,7 @@ void setup(){
   button.attachClick(click);
   button.attachLongPressStart(longpress);
   button2.attachClick(clickup);
+  button3.attachClick(clickdown);
 
   attachInterrupt(digitalPinToInterrupt(but2), stopInterrrupt, CHANGE); //preruseni pro STOP
   Serial.begin(9600); //Zapnutí sériového monitoru
@@ -263,7 +267,7 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   }
 
   //Pokud namerene hodnoty se temer vůbec neschoduji - jina barva
-  int minimum = 7;
+  int minimum = 20;
   if(help[0] <= minimum && help[1] <= minimum && help[2] <= minimum)
       result = -1;
 
@@ -299,9 +303,9 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
 }
 
 void doplnNulyDoPole(){ //Funkce doplni nuly do pole colors pro zapsani mene nez 3 barev
-  for (int r = aktualniBarva; aktualniBarva < pocetBarev; aktualniBarva++){
+  for (int r = aktualniBarva; aktualniBarva <= pocetBarev; aktualniBarva++){
     for (int c = 0; c < 3; c++){
-      colors[aktualniBarva][c] = 0;
+      colors[aktualniBarva-1][c] = 0;
     }
   }
   aktualniBarva = 1;
@@ -339,6 +343,7 @@ void Pridat(){
 void Start(){
   delay(300);
   lcd.clear();
+  doplnNulyDoPole();
  startStop = 1;
 }
 
@@ -396,5 +401,6 @@ void loop(){
   }
   button.tick(); //Funkce tick() kontroluje stav tlacitek
   button2.tick();
+  button3.tick();
   delay(10);
 }
