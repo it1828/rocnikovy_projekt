@@ -51,7 +51,7 @@ int redFrequency;
 int greenFrequency;
 int blueFrequency;
 
-int odchylka = 3;
+int odchylka = 1;
 const int pocetBarev = 3;
 //Pole colors do ktereho se zapisou zmerene hodnoty RGB frekfenci jednotlivych barev
 int colors[pocetBarev][3] = {{0, 0, 0},  
@@ -63,12 +63,18 @@ int aktualniBarva = 1;
 bool layerChanged=false;
 KeyType key = KeyNone;
 
+int first = 0;
+int second = 0;
+int third = 0;
+int others = 0;
+bool clear = false;
 void stopInterrrupt(){ // prerusovaci funkce pro STOP
   if (startStop == 1){
     delay(300);
     g_Menu.exit();
     startStop = 0;
     aktualniBarva = 1;
+    clear = true;
   }
 }
 
@@ -100,6 +106,7 @@ void click(){
     return;
 }
 void clickup(){
+  lcd.clear();
     key = KeyUp;
     return;
 }
@@ -130,7 +137,7 @@ void setup(){
   servo1.write(50);
 
   servo2.attach(11);
-  servo2.write(50);
+  servo2.write(70);
 
   //Nastavení výstupní frekfence na doporučených 20%
   digitalWrite(S0, HIGH);
@@ -222,10 +229,11 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
       Serial.print(RGBdva[i]);
     Serial.println("");
 
+
   //Konrola prave meřene barvy (pole RGB) se zmerenymi barvy v poli colors
    for(int r = 0;r<pocetBarev;r++){
       for (int c = 0; c < 3; c++){
-        if (RGBdva[c] + (odchylka) >= colors[r][c] && RGBdva[c] - (odchylka-1) <= colors[r][c])
+        if (RGBdva[c] + (odchylka) >= colors[r][c] && RGBdva[c] - (odchylka) <= colors[r][c])
             return r;
         else
           r++;
@@ -282,23 +290,39 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   //Podminka switch rozhoduje finalni barvu
   switch (result){
   case 0:
-    lcd.print("Barva 1");
+    servo2.write(0);
+    first++;
     break;
 
   case 1:
-    lcd.print("Barva 2");
+    servo2.write(23);
+    second++;
     break;
 
   case 2:
-    lcd.print("Barva 3");
+    servo2.write(46);
+    third++;
     break;
 
   default:
-    lcd.print("Jina barva");
+    servo2.write(70);
+    others++;
+
   }
+  String vypis = String(first) + " | " + String(second) + " | " + String(third) + " | " + String(others);
+  String vypis2 = "1.  2.  3.  NOK";
+  lcd.setCursor(0,0);
+  lcd.print("--------------------");
+  lcd.setCursor(3,1);
+  lcd.print(vypis);
+  lcd.setCursor(0,2);
+  lcd.print("--------------------");
+  lcd.setCursor(3,3);
+  lcd.print(vypis2);
+
   servo1.write(50); //druha poloha serva1
   delay(2000);
-  lcd.clear();
+  //lcd.clear();
   return;
 }
 
@@ -341,14 +365,28 @@ void Pridat(){
   }
 }
 void Start(){
-  delay(300);
-  lcd.clear();
-  doplnNulyDoPole();
- startStop = 1;
+  if(colors[0][0] != 0){
+    delay(300);
+    lcd.clear();
+    doplnNulyDoPole();
+    startStop = 1;
+  }else{
+    lcd.clear();  
+    lcd.setCursor(0,1);
+    lcd.print("Prazdne pole barev!");
+    delay(2000);
+    lcd.clear();  
+    }
+    
 }
 
 void Reset(){
-  
+  lcd.clear();
+  first = 0;
+  second = 0;
+  third = 0;
+  others = 0;
+  delay(750);
 }
 
 void loop(){
@@ -393,11 +431,16 @@ void loop(){
     }
   }
   key = KeyNone; //Defaultni nastaveni tlacitka na None
+  if(clear){
+    lcd.clear();
+    clear = false;
+      }
+      servo2.write(70);
   }
   else{//Start trizeni
     vypisPole();
     vypisBarvu();
-    servo2.write(10);
+    servo2.write(0);
   }
   button.tick(); //Funkce tick() kontroluje stav tlacitek
   button2.tick();
