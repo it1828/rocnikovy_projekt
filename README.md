@@ -63,3 +63,8 @@ Menu reference:
 
 https://github.com/MajicDesigns/MD_Menu/blob/main/examples/Menu_LCD-Shield/Menu_LCD-Shield.ino
 https://sudonull.com/post/98657-Multilevel-menu-for-Arduino-and-not-only
+
+**Počitadlo**
+
+![image](https://user-images.githubusercontent.com/46921138/141691790-5f0083a7-949d-4b61-ba48-ae81a32a9c56.png)
+
