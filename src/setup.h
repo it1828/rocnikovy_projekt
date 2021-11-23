@@ -51,7 +51,7 @@ int redFrequency;
 int greenFrequency;
 int blueFrequency;
 
-int odchylka = 1;
+int odchylka = 2;
 const int pocetBarev = 3;
 //Pole colors do ktereho se zapisou zmerene hodnoty RGB frekfenci jednotlivych barev
 int colors[pocetBarev][3] = {{0, 0, 0},  

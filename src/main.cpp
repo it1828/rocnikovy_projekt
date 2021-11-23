@@ -43,13 +43,13 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
     greenFrequency = pulseIn(sensorOut, LOW);
     blueFrequency = pulseIn(sensorOut, LOW);
     int RGBdva[3] = {redFrequency, greenFrequency, blueFrequency};
-    
+    /*
     //Vypis RGB ze sensoru
     for (int i = 0; i < 3; i++)
       Serial.print(RGBdva[i]);
-    Serial.println("");
+   Serial.println("");
 
-
+*/
   //Konrola prave meřene barvy (pole RGB) se zmerenymi barvy v poli colors
    for(int r = 0;r<pocetBarev;r++){
       for (int c = 0; c < 3; c++){
@@ -92,7 +92,7 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   }
 
   //Pokud namerene hodnoty se temer vůbec neschoduji - jina barva
-  int minimum = 20;
+  int minimum = 700;
   if(help[0] <= minimum && help[1] <= minimum && help[2] <= minimum)
       result = -1;
 
