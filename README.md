@@ -18,6 +18,14 @@ Protože barevný sensor je citlivý na světlo musel jsem vybrat jako vývojovo
     Arduino Uno
 
     Micro servo SG90 2x
+    
+    3x tlačítko
+    
+    3x Rezistor 10K
+    
+    Malé napájivé pole
+    
+    Univerzální plošný spoj
 
 
 **VS Code s PlatformIO**
