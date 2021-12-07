@@ -1,12 +1,9 @@
 # Rocnikovy projekt
 # Barevná třídička
 
-Třídička bude rozlišovat zakladní barvy. Výpis aktuální a počet v jednotrlivých barvách bude zobrazen na displayi. 
+Třídička bude rozlišovat zakladní barvy.
 Pomocí tří talčitek bude možno scrolovat v menu, zapinat a vypinat trizeni.
 V menu bude funkce, která bude uožnovat pridani vlastnich barev(RGB).
-
-Protože barevný sensor je citlivý na světlo musel jsem vybrat jako vývojovou desku Aruino, protože umožnuje výstup 5V což je dostačující pro nasvícení daného obejktu. ESP8266 umožnuje pouze 3V, při který ledky na snímači nesvicí dostatečně.
-
 
 
 **Využitý hardware**
@@ -47,7 +44,8 @@ Protože barevný sensor je citlivý na světlo musel jsem vybrat jako vývojovo
 ![image](https://user-images.githubusercontent.com/46921138/136070701-7533c755-00e1-41c4-8492-8c618ffacbd7.png)
 
 
-Tridička ted dokáže přidávat dynamicky barvy do pole, ale největší problém je, že sensorn není dostatečně citlivý pro rozlišení všech barev, proto funguje spolehlivěji na více odlišných barvách
+Tridička ted dokáže přidávat dynamicky barvy do pole, ale největší problém je, že sensor není dostatečně citlivý pro rozlišení všech barev, proto funguje spolehlivěji na více odlišných barvách.
+Další  problém je v tom, že lentilky jsou příliš malé a sensor málo citlivý. Sensor nedokáže získat jako výsledek stejné složky RGB i přes to, že se jedná o tu samou totožnou lentilku a z důvodu mechanického provedení, lintilky nepadají pokaždé na střed snímače. Kdyby bylo zajištěno, že lentilky budou padat pokaždé na stejné místo, spolehlivost by se zvýšila.
 
 Jako další krok bude napájení tří tlačítek na plošný spoj a zabudování do předního krytu třídičky, to platí také pro display, který bude na předním krytu.
 

@@ -51,7 +51,7 @@ int redFrequency;
 int greenFrequency;
 int blueFrequency;
 
-int odchylka = 2;
+int odchylka = 4;
 const int pocetBarev = 3;
 //Pole colors do ktereho se zapisou zmerene hodnoty RGB frekfenci jednotlivych barev
 int colors[pocetBarev][3] = {{0, 0, 0},  
@@ -68,7 +68,6 @@ int second = 0;
 int third = 0;
 int others = 0;
 bool clear = false;
-
 
 void stopInterrrupt(){ // prerusovaci funkce pro STOP
   if (startStop == 1){

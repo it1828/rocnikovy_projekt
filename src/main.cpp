@@ -1,34 +1,37 @@
 #include "setup.h"
 //---------------------------------------------------------------------------------------------//
 
+
 int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
-  //Čtení červené barvy, pomocí nastavní pinů S2 a S3 na LOW
-  digitalWrite(S2, LOW);
-  digitalWrite(S3, LOW);
-  //Zápis frekfence do proměnné redFrequency
-
-  //Čtení zelené barvy, pomocí nastavní pinů S2 a S3 na HIGH
-  digitalWrite(S2, HIGH);
-  digitalWrite(S3, HIGH);
-  //Zápis frekfence do proměnné redFrequency
-
-  //Čtení zelené barvy, pomocí nastavní pinů S2 na LOW a S3 na HIGH
-  digitalWrite(S2, LOW);
-  digitalWrite(S3, HIGH);
-
   unsigned long cas = 0;
   cas = millis();
 
-  if (startStop == 0){
-    //Pri zastavení tridicky (zapis barvy do pole colors)
+  if (startStop == 0){  //Pri zastavení tridicky (zapis barvy do pole colors)
     delay(300);
     servo1.write(160);
     lcd.clear();
     do{
+      //Čtení červené barvy, pomocí nastavní pinů S2 a S3 na LOW
+      digitalWrite(S2, LOW);
+      digitalWrite(S3, LOW);
+      //Zápis frekfence do proměnné redFrequency
       redFrequency = pulseIn(sensorOut, LOW);
+
+      //Čtení zelené barvy, pomocí nastavní pinů S2 a S3 na HIGH
+      digitalWrite(S2, HIGH);
+      digitalWrite(S3, HIGH);
+      //Zápis frekfence do proměnné greenFrequency
       greenFrequency = pulseIn(sensorOut, LOW);
+
+      //Čtení zelené barvy, pomocí nastavní pinů S2 na LOW a S3 na HIGH
+      digitalWrite(S2, LOW);
+      digitalWrite(S3, HIGH);
+      //Zápis frekfence do proměnné blueFrequency
       blueFrequency = pulseIn(sensorOut, LOW);
-      int RGB[3] = {redFrequency, greenFrequency, blueFrequency};
+
+      int RGB[] = {redFrequency, greenFrequency, blueFrequency};
+
+    
       for (int i = 0; i <= pocetBarev; i++)
         colors[aktualniBarva - 1][i] = RGB[i];
       
@@ -36,42 +39,55 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
         Serial.print(RGB[i]);
       Serial.println("");
      
-    } while (millis() - cas < 1800);
-    delay(500);
+    } while (millis() - cas < 1500);
+    delay(1000);
     servo1.write(50);
   }
-  else{
-    //Pri startu tridicky (rozlisovani barev)
-    redFrequency = pulseIn(sensorOut, LOW);
-    greenFrequency = pulseIn(sensorOut, LOW);
-    blueFrequency = pulseIn(sensorOut, LOW);
-    int RGBdva[3] = {redFrequency, greenFrequency, blueFrequency};
-    /*
+  else{//Pri startu tridicky (rozlisovani barev)
+   
+      //Čtení červené barvy, pomocí nastavní pinů S2 a S3 na LOW
+      digitalWrite(S2, LOW);
+      digitalWrite(S3, LOW);
+      //Zápis frekfence do proměnné redFrequency
+      redFrequency = pulseIn(sensorOut, LOW);
+
+      //Čtení zelené barvy, pomocí nastavní pinů S2 a S3 na HIGH
+      digitalWrite(S2, HIGH);
+      digitalWrite(S3, HIGH);
+      //Zápis frekfence do proměnné greenFrequency
+      greenFrequency = pulseIn(sensorOut, LOW);
+
+      //Čtení zelené barvy, pomocí nastavní pinů S2 na LOW a S3 na HIGH
+      digitalWrite(S2, LOW);
+      digitalWrite(S3, HIGH);
+      //Zápis frekfence do proměnné blueFrequency
+      blueFrequency = pulseIn(sensorOut, LOW);
+
+      int RGB[] = {redFrequency, greenFrequency, blueFrequency};
+      //---------------------------------
+  /*
     for (int i = 0; i < 3; i++)
-      Serial.print(RGBdva[i]);
+      Serial.print(RGB[i]);
    Serial.println("");
 */
+  int pom = 0; //pomocná proměnná pro kontrolu jednotlivych složek RGB
   //Konrola právě měřené barvy (pole RGB) se změřenými barvy v poli colors
    for(int r = 0;r<pocetBarev;r++){
       for (int c = 0; c < 3; c++){
-        if (RGBdva[c] + (odchylka) >= colors[r][c] && RGBdva[c] - (odchylka) <= colors[r][c])
+        if (RGB[c] + (odchylka) >= colors[r][c] && RGB[c] - (odchylka) <= colors[r][c]){
+          pom++;
+          if(pom == 3)
             return r;
-        else
-          r++;
+        }        
+       /* else{
+         r++;
+        }  */       
       } 
    }
     return -1;
   }
 }
 
-
-    /*
-    //Vypis RGB ze sensoru
-    for (int i = 0; i < 3; i++)
-      Serial.print(RGBdva[i]);
-   Serial.println("");
-
-*/
 void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   servo1.write(160); //prvni poloha serva pro čteni barvy
   unsigned long time = 0;
@@ -101,7 +117,7 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   }
 
   //Pokud namerene hodnoty se temer vůbec neschoduji - jina barva
-  int minimum = 600;
+  int minimum = 300;
   if(help[0] <= minimum && help[1] <= minimum && help[2] <= minimum)
       result = -1;
 
@@ -212,6 +228,7 @@ void Reset(){
   second = 0;
   third = 0;
   others = 0;
+  aktualniBarva = 1;
   delay(750);
 }
 
@@ -268,7 +285,7 @@ void loop(){
       servo2.write(70);
   }
   else{//Start trizeni
-    //vypisPole();
+    vypisPole();
     vypisBarvu();
   }
   button.tick(); //Funkce tick() kontroluje stav tlacitek
