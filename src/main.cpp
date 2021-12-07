@@ -20,7 +20,7 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
   cas = millis();
 
   if (startStop == 0){
-    //Pri stopu tridicky (zapis barvy do pole colors)
+    //Pri zastavení tridicky (zapis barvy do pole colors)
     delay(300);
     servo1.write(160);
     lcd.clear();
@@ -31,10 +31,13 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
       int RGB[3] = {redFrequency, greenFrequency, blueFrequency};
       for (int i = 0; i <= pocetBarev; i++)
         colors[aktualniBarva - 1][i] = RGB[i];
-      for (int i = 0; i < 3; i++)
+      
+        for (int i = 0; i < 3; i++)
         Serial.print(RGB[i]);
       Serial.println("");
-    } while (millis() - cas < 2000);
+     
+    } while (millis() - cas < 1800);
+    delay(500);
     servo1.write(50);
   }
   else{
@@ -44,32 +47,38 @@ int mereniZapisRGB(int akualniBarva){ //Funkce zmeri RGB a zapíše do pole
     blueFrequency = pulseIn(sensorOut, LOW);
     int RGBdva[3] = {redFrequency, greenFrequency, blueFrequency};
     /*
-    //Vypis RGB ze sensoru
     for (int i = 0; i < 3; i++)
       Serial.print(RGBdva[i]);
    Serial.println("");
-
 */
-  //Konrola prave meřene barvy (pole RGB) se zmerenymi barvy v poli colors
+  //Konrola právě měřené barvy (pole RGB) se změřenými barvy v poli colors
    for(int r = 0;r<pocetBarev;r++){
       for (int c = 0; c < 3; c++){
         if (RGBdva[c] + (odchylka) >= colors[r][c] && RGBdva[c] - (odchylka) <= colors[r][c])
             return r;
         else
           r++;
-    } 
+      } 
    }
     return -1;
   }
 }
 
+
+    /*
+    //Vypis RGB ze sensoru
+    for (int i = 0; i < 3; i++)
+      Serial.print(RGBdva[i]);
+   Serial.println("");
+
+*/
 void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   servo1.write(160); //prvni poloha serva pro čteni barvy
   unsigned long time = 0;
   time = millis();
   int help[pocetBarev] = {0, 0, 0}; // pomocne pole pro zaznamenavani vysledku mereni jednotlivych barev
 
-  do{ //začátek měření; přičtení hodnoty na místo barvy v poli podle toho ktera barva se vyskytuje nejcasteji
+  do{ //Začátek měření; přičtení hodnoty na místo barvy v poli podle toho ktera barva se vyskytuje nejcasteji
     int color;
     color = mereniZapisRGB(aktualniBarva);
     if (color == 0)
@@ -78,7 +87,7 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
       help[1]++;
     if (color == 2)
       help[2]++;
-  } while (millis() - time < 2000); //mereni po dobu 2000 milisekund
+  } while (millis() - time < 2500); //mereni po dobu 2000 milisekund
 
   //vybrani nejvetsiho cisla (nejcastejsi barvy) v poli
   int result = 0;
@@ -92,7 +101,7 @@ void vypisBarvu(){ //Funkce kontroluje a vypise barvu
   }
 
   //Pokud namerene hodnoty se temer vůbec neschoduji - jina barva
-  int minimum = 700;
+  int minimum = 600;
   if(help[0] <= minimum && help[1] <= minimum && help[2] <= minimum)
       result = -1;
 
@@ -231,6 +240,8 @@ void loop(){
     //Vypis menu na display
     fid = g_Menu.getInfo(info);
     printMenuEntry(info);
+
+
   //Pri stisku Enter spust funkci odpovidajiciho ID
   if ((KeyEnter == key) && (!layerChanged)) {
     switch (fid) {
@@ -239,7 +250,7 @@ void loop(){
         break;
       case Resetid:
         Reset();
-        break;
+        break;  
       case PridatBarvuId:
         Pridat();
         break;
@@ -247,6 +258,8 @@ void loop(){
         break;
     }
   }
+
+  
   key = KeyNone; //Defaultni nastaveni tlacitka na None
   if(clear){
     lcd.clear();

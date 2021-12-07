@@ -160,7 +160,7 @@ void setup(){
   delay(1500);
   lcd.clear();
 
-  //Nastaveni urovni menu (prvni parametr) a ID
+  //Nastaveni urovni menu (prvni parametr), text a ID
   g_Menu.addNode(0, g_Start_pc , Startid);
   g_Menu.addNode(0, g_Reset_pc , Resetid);
   g_Menu.addNode(0, g_Pridat_pc , Pridatid);
