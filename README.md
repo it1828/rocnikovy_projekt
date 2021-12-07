@@ -18,6 +18,14 @@ Protože barevný sensor je citlivý na světlo musel jsem vybrat jako vývojovo
     Arduino Uno
 
     Micro servo SG90 2x
+    
+    3x tlačítko
+    
+    3x Rezistor 10K
+    
+    Malé napájivé pole
+    
+    Univerzální plošný spoj
 
 
 **VS Code s PlatformIO**
@@ -49,15 +57,12 @@ Jako další krok bude napájení tří tlačítek na plošný spoj a zabudován
 
 **Schéma na tlačítkový modul**
 
-![button shcema](https://user-images.githubusercontent.com/46921138/137467809-3b48715e-3bc6-4a47-be3f-2814bff4eba1.png)
+![image](https://user-images.githubusercontent.com/46921138/143688075-ba766b70-ccea-4caf-97b1-a8dc0d98b70c.png)
 
 
 **Update krabičky o vestavěný display**
 
 ![ddd](https://user-images.githubusercontent.com/46921138/137468195-80edbd1b-2200-4eb3-b5c1-1b592651908e.jpg)
-
-
-To do: vylepšit menu za pomocí knihovny, pokračovat v optimalizaci a zpřehlednit kód...
 
 Menu reference: 
 
@@ -67,4 +72,9 @@ https://sudonull.com/post/98657-Multilevel-menu-for-Arduino-and-not-only
 **Počitadlo**
 
 ![image](https://user-images.githubusercontent.com/46921138/141691790-5f0083a7-949d-4b61-ba48-ae81a32a9c56.png)
+
+
+**Konečné schéma v programu KiCad**
+![image](https://user-images.githubusercontent.com/46921138/143688105-7e740e57-aed2-4f39-903c-35d74ecb7f92.png)
+
 
