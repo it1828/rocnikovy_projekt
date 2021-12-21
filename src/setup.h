@@ -95,9 +95,22 @@ void printMenuEntry(const char* f_Info) {// "sablona" pro vypis menu
   lcd.print("  ");
   lcd.print("Enter/Exit");
 }
+void doplnNulyDoPole()
+{ //Funkce doplni nuly do pole colors pro zapsani mene nez 3 barev
+  for (int r = aktualniBarva; aktualniBarva <= pocetBarev; aktualniBarva++)
+  {
+    for (int c = 0; c < 3; c++)
+    {
+      colors[aktualniBarva - 1][c] = 0;
+    }
+  }
+  aktualniBarva = 1;
+  return;
+}
 
 //Jednoduche funkce pro osetreni tlacitek
 void doubleClick(){
+    doplnNulyDoPole();
     startStop = 1;
     return;
 }
@@ -113,6 +126,7 @@ void clickup(){
     return;
 }
 void longpress(){
+    doplnNulyDoPole();
     key = KeyExit;
     return;
 }
